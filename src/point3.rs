@@ -43,11 +43,22 @@ impl Neg for Point3 {
     }
 }
 
-impl Sub for Point3 {
+impl Sub<Point3> for Point3 {
     type Output = Vec3;
 
     fn sub(self, rhs: Point3) -> Vec3 {
         Vec3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl Sub<Vec3> for Point3 {
+    type Output = Point3;
+    fn sub(self, rhs: Vec3) -> Point3 {
+        Point3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
@@ -72,6 +83,14 @@ mod test {
         assert_eq!(
             Point3 { x: 1.0, y: 0.0, z: 3.0 } + Vec3 { x: 1.0, y: 2.0, z: 1.4 },
             Point3 { x: 2.0, y: 2.0, z: 4.4 }
+        );
+    }
+
+    #[test]
+    fn sub_point_with_vec() {
+        assert_eq!(
+            Point3 { x: 1.0, y: 0.0, z: 3.0 } - Vec3 { x: 1.0, y: 2.0, z: 1.4 },
+            Point3 { x: 0.0, y: -2.0, z: 1.6 }
         );
     }
 

@@ -1,16 +1,18 @@
-use crate::{point3::Point3, ray::Ray, vec3::Vec3};
+use crate::{material::Material, point3::Point3, ray::Ray, vec3::Vec3};
 
 #[derive(Copy, Clone)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub t: f32,
     pub p: Point3,
     pub n: Vec3,
+    pub material: &'a Material,
 }
 
 #[derive(Copy, Clone)]
 pub struct Sphere {
     pub center: Point3,
     pub radius: f32,
+    pub material: Material,
 }
 
 pub trait Hitable {
@@ -18,10 +20,11 @@ pub trait Hitable {
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f32) -> Self {
+    pub fn new(center: Point3, radius: f32, material: Material) -> Self {
         Sphere {
             center,
             radius,
+            material,
         }
     }
 }
@@ -42,6 +45,7 @@ impl Hitable for Sphere {
                     t: temp,
                     p: hit_point,
                     n: (1.0 / self.radius) * (hit_point - self.center),
+                    material: &self.material,
                 });
             }
 
@@ -52,6 +56,7 @@ impl Hitable for Sphere {
                     t: temp,
                     p: hit_point,
                     n: (1.0 / self.radius) * (hit_point - self.center),
+                    material: &self.material,
                 });
             }
         }
