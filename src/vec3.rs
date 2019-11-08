@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use rand::prelude::*;
 
@@ -50,6 +50,14 @@ impl Vec3 {
         }
     }
 
+    pub fn sqrt(&self) -> Vec3 {
+        Vec3 {
+            x: self.x.sqrt(),
+            y: self.y.sqrt(),
+            z: self.z.sqrt(),
+        }
+    }
+
     pub fn reflect(&self, n: Vec3) -> Vec3 {
         *self - 2.0 * self.dot(n) * n
     }
@@ -72,6 +80,18 @@ impl AddAssign for Vec3 {
         self.x += rhs.x;
         self.y += rhs.y;
         self.z += rhs.z;
+    }
+}
+
+impl Div<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn div(self, rhs: f32) -> Vec3 {
+        Vec3 {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
     }
 }
 
@@ -143,5 +163,18 @@ pub fn random_in_unit_disk(rng: &mut ThreadRng) -> Vec3 {
         if p.squared_length() < 1.0 {
             break p;
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Vec3;
+
+    #[test]
+    fn divide_by_f32() {
+        assert_eq!(
+            Vec3::new(3.0, 2.0, 100.0) / 2.0,
+            Vec3::new(1.5, 1.0, 50.0)
+        );
     }
 }
