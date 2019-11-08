@@ -1,3 +1,7 @@
+use std::{thread, time};
+use std::process::exit;
+
+use minifb::{Key, Window, WindowOptions};
 use rand::{Rng, thread_rng};
 
 use crate::camera::Camera;
@@ -29,9 +33,12 @@ fn color(ray: &Ray, world: &HitableList, depth: i32) -> Vec3 {
     }
 }
 
+fn to_bgra(r: u32, g: u32, b: u32) -> u32 {
+    255 << 24 | r << 16 | g << 8 | b
+}
+
 fn main() {
     let (nx, ny, ns) = (400, 200, 100);
-    print!("P3\n{} {}\n255\n", nx, ny);
 
     let cam = Camera::new(Point3::new(-2.0, 2.0, 1.0),
                           Point3::new(0.0, 0.0, -1.0),
@@ -50,24 +57,52 @@ fn main() {
                              Material::dielectric(1.5))),
     ]);
 
-    for y in (0..ny).rev() {
-        for x in 0..nx {
-            let mut col = Vec3::zeros();
-            for s in 0..ns {
-                let mut rng = thread_rng();
+    let mut buffer: Vec<u32> = vec![0; nx * ny];
+    let mut window = Window::new("SimpleRayTracer-rs",
+                                 nx,
+                                 ny,
+                                 WindowOptions::default()).unwrap_or_else(|e| {
+        panic!("{}", e);
+    });
 
-                let (u, v) = ((x as f32 + rng.gen::<f32>()) / nx as f32,
-                              (y as f32 + rng.gen::<f32>()) / ny as f32);
-                let r = cam.get_ray(u, v);
-                let p = r.point_at_parameter(2.0);
-                col += color(&r, &world, 0);
+    let mut is_finished = false;
+    while window.is_open() {
+        if !is_finished {
+            for y in (0..ny).rev() {
+                for x in 0..nx {
+                    let mut col = Vec3::zeros();
+                    for s in 0..ns {
+                        let mut rng = thread_rng();
+
+                        let (u, v) = ((x as f32 + rng.gen::<f32>()) / nx as f32,
+                                      (y as f32 + rng.gen::<f32>()) / ny as f32);
+                        let r = cam.get_ray(u, v);
+                        col += color(&r, &world, 0);
+                    }
+                    col = col / ns as f32;
+                    col = col.sqrt();
+                    let mut i = buffer.get_mut(nx * (ny - 1) - nx * y + x).unwrap();
+                    *i = to_bgra((255.99 * col.x) as u32,
+                                 (255.99 * col.y) as u32,
+                                 (255.99 * col.z) as u32);
+                }
+                window.update_with_buffer(&buffer).unwrap();
             }
-            col = col / ns as f32;
-            col = col.sqrt();
-            println!("{} {} {}",
-                     (255.99 * col.x) as i32,
-                     (255.99 * col.y) as i32,
-                     (255.99 * col.z) as i32);
+            is_finished = true;
+        } else {
+            window.get_keys().map(|keys| {
+                for t in keys {
+                    match t {
+                        Key::Escape => {
+                            println!("Goodbye!");
+                            exit(0);
+                        }
+                        _ => (),
+                    }
+                }
+            });
+            window.update_with_buffer(&buffer).unwrap();
+            thread::sleep(time::Duration::from_millis(50));
         }
     }
 }
