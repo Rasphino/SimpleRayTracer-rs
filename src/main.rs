@@ -5,11 +5,11 @@ use minifb::{Key, Window, WindowOptions};
 use rand::{Rng, thread_rng};
 
 use crate::camera::Camera;
-use crate::hitable::{Hitable, HitableList, HitRecord, Sphere};
+use crate::hitable::{Hitable, HitableList, Sphere};
 use crate::material::Material;
 use crate::point3::Point3;
 use crate::ray::Ray;
-use crate::vec3::{random_in_unit_sphere, Vec3};
+use crate::vec3::Vec3;
 
 mod vec3;
 mod ray;
@@ -38,13 +38,18 @@ fn to_bgra(r: u32, g: u32, b: u32) -> u32 {
 }
 
 fn main() {
-    let (nx, ny, ns) = (400, 200, 100);
+    let (nx, ny, ns) = (800, 400, 100);
 
-    let cam = Camera::new(Point3::new(-2.0, 2.0, 1.0),
-                          Point3::new(0.0, 0.0, -1.0),
+    let lookfrom = Point3::new(-2.0, 2.0, 1.0);
+    let lookat = Point3::new(0.0, 0.0, -1.0);
+    let cam = Camera::new(lookfrom,
+                          lookat,
                           Vec3::new(0.0, 1.0, 0.0),
                           40.0,
-                          nx as f32 / ny as f32);
+                          nx as f32 / ny as f32,
+                          0.5,
+                          (lookfrom - lookat).length(),
+    );
 
     let world = HitableList::new(vec![
         Box::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5,
@@ -52,13 +57,13 @@ fn main() {
         Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0,
                              Material::lambertian(Vec3::new(0.8, 0.8, 0.0)))),
         Box::new(Sphere::new(Point3::new(1.0, 0.0, -1.0), 0.5,
-                             Material::metal(Vec3::new(0.8, 0.6, 0.2), 0.0))),
+                             Material::metal(Vec3::new(0.8, 0.6, 0.2), 0.4))),
         Box::new(Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.5,
                              Material::dielectric(1.5))),
     ]);
 
     let mut buffer: Vec<u32> = vec![0; nx * ny];
-    let mut window = Window::new("SimpleRayTracer-rs",
+    let mut window = Window::new("Simple Ray Tracer",
                                  nx,
                                  ny,
                                  WindowOptions::default()).unwrap_or_else(|e| {
@@ -71,7 +76,7 @@ fn main() {
             for y in (0..ny).rev() {
                 for x in 0..nx {
                     let mut col = Vec3::zeros();
-                    for s in 0..ns {
+                    for _ in 0..ns {
                         let mut rng = thread_rng();
 
                         let (u, v) = ((x as f32 + rng.gen::<f32>()) / nx as f32,
@@ -81,7 +86,7 @@ fn main() {
                     }
                     col = col / ns as f32;
                     col = col.sqrt();
-                    let mut i = buffer.get_mut(nx * (ny - 1) - nx * y + x).unwrap();
+                    let i = buffer.get_mut(nx * (ny - 1) - nx * y + x).unwrap();
                     *i = to_bgra((255.99 * col.x) as u32,
                                  (255.99 * col.y) as u32,
                                  (255.99 * col.z) as u32);
